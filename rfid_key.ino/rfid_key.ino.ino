@@ -13,7 +13,7 @@
 #include <MFRC522.h> // Импорт библиотеки "RFID".
 #define SS_PIN 10
 #define RST_PIN 9
-#define password "d6lv;wdke[5wh4f5" // Пароль для ввода (при вводе пароля на русском используются все равно анлийские клавиши)
+#define password "password" // Пароль для ввода (при вводе пароля на русском используются все равно анлийские клавиши)
 
 MFRC522 mfrc522(SS_PIN, RST_PIN); // Назначаем пины
 unsigned long uidDec, uidDecTemp;  // Переменная для хранения номера метки в десятичном формате
