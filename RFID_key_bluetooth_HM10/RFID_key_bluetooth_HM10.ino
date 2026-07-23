@@ -128,6 +128,20 @@ void loop() {
       Serial.println("Ввод текста на ПК: " + text);
       Keyboard.print(text);
     }
+    
+    // Команда блокировки ПК (пока работает только с латинницей)
+    // Для безопасности указывается ID метки RFID
+    if(command.startsWith("lock 01234567")){
+      delay (100);
+      Keyboard.press(KEY_RIGHT_GUI); // Нажатие клавиши WIN
+      delay (100);
+      Keyboard.print("l");
+      delay (100);
+      Keyboard.release(KEY_RIGHT_GUI);
+      digitalWrite(led_pin, HIGH);
+      delay (2000);
+      digitalWrite(led_pin, LOW);
+    }
   }
 
   // Поиск новой метки
