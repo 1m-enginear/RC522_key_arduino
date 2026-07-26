@@ -24,7 +24,7 @@
 
 
 // Указываем новое имя продукта, производителя и серийный номер для маскировки под обычную USB клавиатуру
-USBRename dummy = USBRename("USB Keyboard", "M Tech", "2211LZK0545563");
+USBRename dummy = USBRename("USB Keyboard", "Unknown", "2211LZK0445563");
 
 const int led_pin = 4;  // Светодиод для индикации активности устройства
 
@@ -63,21 +63,10 @@ String loadPassword() {
 }
 
 // Функция ввода текста
-void type_text(String password, bool change_layout, bool type_enter){
+void type_text(String password, bool type_enter){
 
   Serial.println("Добро пожаловать!");
   Serial.println("Выполняется ввод пароля.");
-
-  // Моргаем
-  diode_blink(1, 1000, 200);
-
-  // Моргаем
-  diode_blink(1, 200, 200);
-
-  if (change_layout){
-    // Смена раскладки
-    change_keyboard_layout("en");
-  }
 
   // Начало ввода пароля
   Keyboard.print(password);
@@ -113,6 +102,7 @@ void change_keyboard_layout(String lang){
   Keyboard.release(KEY_LEFT_CTRL);   // Отжатие клавиши SHIFT
   Keyboard.release(KEY_LEFT_SHIFT);  // Отжатие клавиши SHIFT
 }
+
 // Логин и пароль для администратора
 #define admin_username "admin_username"
 #define admin_password "admin_password"
@@ -122,7 +112,7 @@ void setup() {
   pinMode(led_pin, OUTPUT);
   Serial.begin(9600);   // USB Serial
   Serial1.begin(9600);  // Bluetooth HM-10
-  //  Serial1.print("AT+NAMERFID-Key_Name"); // Нужен только для настройки имени Bluetooth модуля
+  // Serial1.print("AT+NAMEAirPods"); // Нужен только для настройки имени Bluetooth модуля
 
   user_password = loadPassword();  // Загрузка пароля из EEPROM
   // Если пароль отсутствует то ставим стандартный
@@ -181,7 +171,19 @@ void loop() {
       Keyboard.print(text);
     }
 
-    // Команда блокировки ПК (пока работает только с латинницей)
+    // Команда разблокировки ПК (пока отключена, требуется доработка)
+    // Для безопасности указывается ID метки RFID
+    // if (command.startsWith("unlock " + card_uid_user1)) {
+    //   // String password_number = command.substring(7 + std::to_string(card_uid_user1.strlen()).length(););
+    //   password_number = 1
+    //   if (password_number == 1){
+    //     change_keyboard_layout("en");
+    //     type_text(user_password, true);
+    //     diode_blink(1, 500, 200);
+    //   }
+    // }
+
+    // Команда блокировки ПК
     // Для безопасности указывается ID метки RFID
     if (command.startsWith("lock " + card_uid_user1)) {
       delay(100);
@@ -212,17 +214,21 @@ void loop() {
   }
   Serial.println("Считывание карты...");
   //Serial.println("UID карты: ");
-  Serial.println(uidDec); // Выводим UID метки в консоль. (ВНИМАНИЕ! Отключить после настройки!)
+  // Serial.println(uidDec); // Выводим UID метки в консоль. (ВНИМАНИЕ! Отключить после настройки!)
   if (uidDec == card_uid_user1)  // Сравниваем Uid метки, если он равен заданому то вводим пароль.
   {
-    type_text(user_password, true, true);
+    change_keyboard_layout("en");
+    type_text(user_password, true);
+    diode_blink(1, 500, 200);
   }
   if (uidDec == card_uid_user2) {
-    type_text(admin_username, true, false);
+    change_keyboard_layout("en");
+    type_text(admin_username, false);
     Keyboard.press(KEY_TAB);  // Нажатие клавиши TAB для переключения на пароль
     delay(100);
     Keyboard.release(KEY_TAB);  // Отпускание клавиши TAB для переключения на пароль
-    type_text(admin_password, true, true);
+    type_text(admin_password, true);
+    diode_blink(2, 500, 200);
   }
 
   // Ждем 2 секунды перед новой итерацией цикла
