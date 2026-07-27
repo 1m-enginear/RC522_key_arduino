@@ -97,6 +97,7 @@ void change_keyboard_layout(String lang){
   else {key = "1";}
   // Смена раскладки:
   Keyboard.press(KEY_LEFT_CTRL);  // Нажатие клавиши CTRL
+  delay (800);
   Keyboard.press(KEY_LEFT_SHIFT);    // Нажатие клавиши SHIFT
   Keyboard.print(key);               // Нажатие клавиши номера языка
   Keyboard.release(KEY_LEFT_CTRL);   // Отжатие клавиши SHIFT
