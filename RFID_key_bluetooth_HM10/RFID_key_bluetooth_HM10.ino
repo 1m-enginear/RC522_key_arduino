@@ -112,7 +112,7 @@ void setup() {
   pinMode(led_pin, OUTPUT);
   Serial.begin(9600);   // USB Serial
   Serial1.begin(9600);  // Bluetooth HM-10
-  // Serial1.print("AT+NAMEAirPods"); // Нужен только для настройки имени Bluetooth модуля
+//  Serial1.print("AT+NAMEAirPods"); // Нужен только для настройки имени Bluetooth модуля
 
   user_password = loadPassword();  // Загрузка пароля из EEPROM
   // Если пароль отсутствует то ставим стандартный
@@ -149,10 +149,12 @@ void loop() {
       }
     }
 
-    //! Команда установки имени устройства (Пока не работает в текущем виде)
+    //! Команда установки имени устройства (Работает при отключении устройства)
     if (command.startsWith("set_ble_name ")) {
       String newName = command.substring(13);
       newName.trim();
+      Serial1.println("AT");
+      delay(5000);
       Serial1.print("AT+NAME" + newName);
       Serial.println("New name: " + newName);
     }
