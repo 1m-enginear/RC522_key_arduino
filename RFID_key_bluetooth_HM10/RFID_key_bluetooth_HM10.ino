@@ -22,6 +22,11 @@
 #define card_uid_user1 01234567  // Ожидаемый UID карты для ввода пароля номер 1 пользователя
 #define card_uid_user2 76543210  // Ожидаемый UID карты для ввода пароля номер 2 пользователя
 
+// Логин и пароль для администратора
+#define admin_username "admin_username"
+#define admin_password "admin_password"
+MFRC522 mfrc522(SS_PIN, RST_PIN);  // Назначаем пины
+unsigned long uidDec, uidDecTemp;  // Переменная для хранения номера метки в десятичном формате
 
 // Указываем новое имя продукта, производителя и серийный номер для маскировки под обычную USB клавиатуру
 USBRename dummy = USBRename("USB Keyboard", "Unknown", "2211LZK0445563");
@@ -104,11 +109,6 @@ void change_keyboard_layout(String lang){
   Keyboard.release(KEY_LEFT_SHIFT);  // Отжатие клавиши SHIFT
 }
 
-// Логин и пароль для администратора
-#define admin_username "admin_username"
-#define admin_password "admin_password"
-MFRC522 mfrc522(SS_PIN, RST_PIN);  // Назначаем пины
-unsigned long uidDec, uidDecTemp;  // Переменная для хранения номера метки в десятичном формате
 void setup() {
   pinMode(led_pin, OUTPUT);
   Serial.begin(9600);   // USB Serial
