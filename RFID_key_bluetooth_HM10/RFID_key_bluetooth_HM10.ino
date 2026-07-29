@@ -37,6 +37,230 @@ const int led_pin = 4;  // Светодиод для индикации акти
 String user_password;
 
 #define EEPROM_ADDR 0  // Адрес хранения пароля в EEPROM
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Экпериментальные функции +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// ============= СОХРАНЕНИЕ ПО ИНДЕКСУ =============
+bool saveAccountByIndex(int index, String login, String password) {
+  // Проверка индекса
+  if (index < 0 || index >= MAX_ACCOUNTS) {
+    return false;
+  }
+  
+  // Проверка длины логина
+  int loginLen = login.length();
+  if (loginLen > MAX_LOGIN_LENGTH) {
+    loginLen = MAX_LOGIN_LENGTH;
+    login = login.substring(0, MAX_LOGIN_LENGTH);
+  }
+  
+  // Проверка длины пароля
+  int passLen = password.length();
+  if (passLen > MAX_PASSWORD_LENGTH) {
+    passLen = MAX_PASSWORD_LENGTH;
+    password = password.substring(0, MAX_PASSWORD_LENGTH);
+  }
+  
+  // Вычисляем адрес для этого индекса
+  int addr = EEPROM_START_ADDR + (index * RECORD_SIZE);
+  
+  // Сохраняем длину логина
+  EEPROM.update(addr, loginLen);
+  addr++;
+  
+  // Сохраняем логин
+  for (int i = 0; i < loginLen; i++) {
+    EEPROM.update(addr + i, login[i]);
+  }
+  // Очищаем остаток ячейки логина
+  for (int i = loginLen; i < MAX_LOGIN_LENGTH; i++) {
+    EEPROM.update(addr + i, 0);
+  }
+  addr += MAX_LOGIN_LENGTH;
+  
+  // Сохраняем длину пароля
+  EEPROM.update(addr, passLen);
+  addr++;
+  
+  // Сохраняем пароль
+  for (int i = 0; i < passLen; i++) {
+    EEPROM.update(addr + i, password[i]);
+  }
+  // Очищаем остаток ячейки пароля
+  for (int i = passLen; i < MAX_PASSWORD_LENGTH; i++) {
+    EEPROM.update(addr + i, 0);
+  }
+  
+  return true;
+}
+
+// ============= ЗАГРУЗКА ПО ИНДЕКСУ =============
+bool loadAccountByIndex(int index, String &login, String &password) {
+  // Проверка индекса
+  if (index < 0 || index >= MAX_ACCOUNTS) {
+    return false;
+  }
+  
+  // Вычисляем адрес
+  int addr = EEPROM_START_ADDR + (index * RECORD_SIZE);
+  
+  // Читаем длину логина
+  int loginLen = EEPROM.read(addr);
+  addr++;
+  
+  // Проверка длины логина
+  if (loginLen < 0 || loginLen > MAX_LOGIN_LENGTH) {
+    return false;
+  }
+  
+  // Формируем логин
+  login = "";
+  for (int i = 0; i < loginLen; i++) {
+    char c = char(EEPROM.read(addr + i));
+    if (c == 0) break;
+    login += c;
+  }
+  addr += MAX_LOGIN_LENGTH;
+  
+  // Читаем длину пароля
+  int passLen = EEPROM.read(addr);
+  addr++;
+  
+  // Проверка длины пароля
+  if (passLen < 0 || passLen > MAX_PASSWORD_LENGTH) {
+    return false;
+  }
+  
+  // Формируем пароль
+  password = "";
+  for (int i = 0; i < passLen; i++) {
+    char c = char(EEPROM.read(addr + i));
+    if (c == 0) break;
+    password += c;
+  }
+  
+  return true;
+}
+
+// ============= ПРОВЕРКА СУЩЕСТВОВАНИЯ АККАУНТА =============
+bool isAccountExists(int index) {
+  if (index < 0 || index >= MAX_ACCOUNTS) return false;
+  
+  int addr = EEPROM_START_ADDR + (index * RECORD_SIZE);
+  int loginLen = EEPROM.read(addr);
+  
+  return (loginLen > 0 && loginLen <= MAX_LOGIN_LENGTH);
+}
+
+// ============= УДАЛЕНИЕ ПО ИНДЕКСУ =============
+void deleteAccountByIndex(int index) {
+  if (index < 0 || index >= MAX_ACCOUNTS) return;
+  
+  int addr = EEPROM_START_ADDR + (index * RECORD_SIZE);
+  
+  // Очищаем всю запись
+  for (int i = 0; i < RECORD_SIZE; i++) {
+    EEPROM.update(addr + i, 0);
+  }
+}
+
+// ============= ПОИСК ПО ЛОГИНУ =============
+int findAccountByLogin(String login) {
+  String tempLogin, tempPass;
+  
+  for (int i = 0; i < MAX_ACCOUNTS; i++) {
+    if (loadAccountByIndex(i, tempLogin, tempPass)) {
+      if (tempLogin == login) {
+        return i;
+      }
+    }
+  }
+  return -1; // Не найден
+}
+
+// ============= ПОЛУЧИТЬ КОЛИЧЕСТВО АККАУНТОВ =============
+int getAccountsCount() {
+  int count = 0;
+  for (int i = 0; i < MAX_ACCOUNTS; i++) {
+    if (isAccountExists(i)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+// ============= ПОИСК СВОБОДНОГО ИНДЕКСА =============
+int findFreeIndex() {
+  for (int i = 0; i < MAX_ACCOUNTS; i++) {
+    if (!isAccountExists(i)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+// ============= ЗАГРУЗКА ВСЕХ АККАУНТОВ =============
+int loadAllAccounts(String logins[], String passwords[], int maxCount) {
+  int count = 0;
+  String tempLogin, tempPass;
+  
+  for (int i = 0; i < MAX_ACCOUNTS && count < maxCount; i++) {
+    if (loadAccountByIndex(i, tempLogin, tempPass)) {
+      logins[count] = tempLogin;
+      passwords[count] = tempPass;
+      count++;
+    }
+  }
+  return count;
+}
+
+// ============= ЗАГРУЗКА С ИНДЕКСАМИ =============
+int loadAllAccountsWithIndices(String logins[], String passwords[], int indices[], int maxCount) {
+  int count = 0;
+  String tempLogin, tempPass;
+  
+  for (int i = 0; i < MAX_ACCOUNTS && count < maxCount; i++) {
+    if (loadAccountByIndex(i, tempLogin, tempPass)) {
+      logins[count] = tempLogin;
+      passwords[count] = tempPass;
+      indices[count] = i;
+      count++;
+    }
+  }
+  return count;
+}
+
+// ============= ОЧИСТКА ВСЕЙ EEPROM =============
+void clearAllAccounts() {
+  for (int i = 0; i < MAX_ACCOUNTS; i++) {
+    deleteAccountByIndex(i);
+  }
+}
+
+// ============= ОБНОВЛЕНИЕ ПАРОЛЯ ПО ЛОГИНУ =============
+bool updatePasswordByLogin(String login, String newPassword) {
+  int index = findAccountByLogin(login);
+  if (index == -1) return false;
+  
+  String existingLogin, existingPass;
+  loadAccountByIndex(index, existingLogin, existingPass);
+  
+  return saveAccountByIndex(index, existingLogin, newPassword);
+}
+
+// ============= ДОБАВЛЕНИЕ НОВОГО АККАУНТА =============
+bool addNewAccount(String login, String password) {
+  // Проверка, существует ли уже такой логин
+  if (findAccountByLogin(login) != -1) {
+    return false; // Логин уже существует
+  }
+  
+  int freeIndex = findFreeIndex();
+  if (freeIndex == -1) {
+    return false; // Нет свободного места
+  }
+  
+  return saveAccountByIndex(freeIndex, login, password);
+}
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // Функция сохранения пароля в EEPROM
 void savePassword(String newPassword) {
