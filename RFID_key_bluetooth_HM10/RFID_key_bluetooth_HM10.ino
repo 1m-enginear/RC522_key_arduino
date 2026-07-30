@@ -37,7 +37,15 @@ const int led_pin = 4;  // Светодиод для индикации акти
 String user_password;
 
 #define EEPROM_ADDR 0  // Адрес хранения пароля в EEPROM
-//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Экпериментальные функции +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ (экспериментальные функции) +++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Конфигурация для сохранения в EEPROM
+#define EEPROM_START_ADDR 0
+#define MAX_ACCOUNTS 20              // Максимум аккаунтов
+#define MAX_LOGIN_LENGTH 20          // Максимальная длина логина
+#define MAX_PASSWORD_LENGTH 30       // Максимальная длина пароля
+#define RECORD_SIZE (1 + MAX_LOGIN_LENGTH + 1 + MAX_PASSWORD_LENGTH) 
+
 // ============= СОХРАНЕНИЕ ПО ИНДЕКСУ =============
 bool saveAccountByIndex(int index, String login, String password) {
   // Проверка индекса
@@ -260,7 +268,9 @@ bool addNewAccount(String login, String password) {
   
   return saveAccountByIndex(freeIndex, login, password);
 }
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ (конец экспериментальных функций) +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
 
 // Функция сохранения пароля в EEPROM
 void savePassword(String newPassword) {
@@ -291,7 +301,7 @@ String loadPassword() {
   return result;
 }
 
-// Функция ввода текста
+// ============= ВВОД ТЕКСТА =============
 void type_text(String password, bool type_enter){
 
   Serial.println("Добро пожаловать!");
@@ -309,7 +319,7 @@ void type_text(String password, bool type_enter){
 
 }
 
-// Световая индикация диодом
+// ============= СВЕТОВАЯ ИНДИКАЦИЯ =============
 void diode_blink(int count, int delay_between, int delay_after){
   for (int i = 0; i < count; i++) {
     digitalWrite(led_pin, HIGH);
@@ -319,7 +329,7 @@ void diode_blink(int count, int delay_between, int delay_after){
   }
 }
 
-// Изменение раскладки
+// ============= ИЗМЕНЕНИЕ РАСКЛАДКИ =============
 void change_keyboard_layout(String lang){
   String key;
   if (lang == "en") {key = "0";}
@@ -333,6 +343,7 @@ void change_keyboard_layout(String lang){
   Keyboard.release(KEY_LEFT_SHIFT);  // Отжатие клавиши SHIFT
 }
 
+// ============= ИНИЦИАЛИЗАЦИЯ =============
 void setup() {
   pinMode(led_pin, OUTPUT);
   Serial.begin(9600);   // USB Serial
@@ -350,6 +361,8 @@ void setup() {
   SPI.begin();         // Инициализация SPI
   mfrc522.PCD_Init();  // Инициализация MFRC522
 }
+
+// ============= ОСНОВНОЙ ЦИКЛ =============
 void loop() {
 
   // Получение команды из Bluetooth
