@@ -9,18 +9,35 @@
  * Для корретной работы необходимо настроить сочетание клавиш для смены раскладки, а именно CTRL+SHIFT+0 - переключение на английский язык
  * 
  */
-
+ 
 #include <SPI.h>
 #include <EEPROM.h>      // Хранение данных в EEPROM
 #include <Keyboard.h>    // Импорт библиотеки для клавиатуры
 #include <MFRC522.h>     // Импорт библиотеки "RFID".
 #include "usb_rename.h"  // Библиотека для смены USB дескриптора устройства
-
+#include <AESLib.h>      // Библиотека шифрования
 #define SS_PIN 10  // Пин для порта Serial, к которому подключается RC522
 #define RST_PIN 9  // Пин для сброса, к которому подключается RC522
 
 #define card_uid_user1 01234567  // Ожидаемый UID карты для ввода пароля номер 1 пользователя
 #define card_uid_user2 76543210  // Ожидаемый UID карты для ввода пароля номер 2 пользователя
+
+// Настройка AES
+AESLib aesLib;
+// Ключ шифрования
+byte aes_key[16] = {
+  0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6,
+  0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C
+};
+// Вектор инициализации
+// Для EEPROM подойдет фиксированный
+byte aes_iv[16] = {
+  0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+  0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
+};
+// Буферы для работы
+byte encryptedBuffer[64];
+byte decryptedBuffer[64];
 
 // Логин и пароль для администратора
 #define admin_username "admin_username"
@@ -39,6 +56,53 @@ String user_password;
 #define EEPROM_ADDR 0  // Адрес хранения пароля в EEPROM
 
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ (экспериментальные функции) +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+// ============= ФУНКЦИЯ ШИФРОВАНИЯ =============
+String encryptString(String input) {
+  if (input.length() == 0) return "";
+
+  // Копируем IV перед каждым шифрованием (библиотека его изменяет)
+  byte iv[16];
+  memcpy(iv, aes_iv, 16);
+
+  // Шифруем в формат base64 (строка)
+  int encLen = aesLib.encrypt64(
+    (const byte*)input.c_str(),
+    input.length(),
+    (char*)encryptedBuffer,
+    aes_key,
+    128,      // Размер ключа в битах
+    iv
+  );
+
+  // Обрезаем буфер до реальной длины
+  encryptedBuffer[encLen] = '\0';
+  return String((char*)encryptedBuffer);
+}
+
+// ============= ФУНКЦИЯ РАСШИФРОВАНИЯ =============
+String decryptString(String encrypted) {
+  if (encrypted.length() == 0) return "";
+
+  // Копируем IV перед расшифровкой
+  byte iv[16];
+  memcpy(iv, aes_iv, 16);
+
+  // Расшифровываем из base64
+  int decLen = aesLib.decrypt64(
+    encrypted.c_str(),
+    encrypted.length(),
+    decryptedBuffer,
+    aes_key,
+    128,
+    iv
+  );
+
+  decryptedBuffer[decLen] = '\0';
+  return String((char*)decryptedBuffer);
+}
+
+
 // Конфигурация для сохранения в EEPROM
 #define EEPROM_START_ADDR 0
 #define MAX_ACCOUNTS 20              // Максимум аккаунтов
